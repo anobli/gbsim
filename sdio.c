@@ -570,7 +570,7 @@ static void sd_init(void)
 }
 
 /* Greybus Specific Code */
-static ssize_t sdio_send_card_event(struct op_msg *op_req, uint16_t hd_cport_id,
+static ssize_t sdio_send_card_event(struct op_msg *op_req, uint16_t cport_id,
 				    uint8_t event)
 {
 	uint16_t message_size = sizeof(struct gb_operation_msg_hdr) +
@@ -578,11 +578,11 @@ static ssize_t sdio_send_card_event(struct op_msg *op_req, uint16_t hd_cport_id,
 
 	op_req->sdio_event_req.event = event;
 
-	return send_request(hd_cport_id, op_req, message_size, 0,
+	return send_request(cport_id, op_req, message_size, 0,
 			GB_SDIO_TYPE_EVENT);
 }
 
-static ssize_t sdio_transfer_rsp(struct op_msg *op_rsp, uint16_t hd_cport_id,
+static ssize_t sdio_transfer_rsp(struct op_msg *op_rsp, uint16_t cport_id,
 				 struct gb_operation_msg_hdr *oph, uint16_t data_blocks,
 				 uint16_t data_blksz, uint8_t *data)
 {
@@ -615,12 +615,12 @@ static ssize_t sdio_transfer_rsp(struct op_msg *op_rsp, uint16_t hd_cport_id,
 
 send:
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	return send_response(hd_cport_id, op_rsp, message_size,
+	return send_response(cport_id, op_rsp, message_size,
 				oph->operation_id, oph->type,
 				PROTOCOL_STATUS_SUCCESS);
 }
 
-static ssize_t sdio_command_rsp(struct op_msg *op_rsp, uint16_t hd_cport_id,
+static ssize_t sdio_command_rsp(struct op_msg *op_rsp, uint16_t cport_id,
 				struct gb_operation_msg_hdr *oph)
 {
 	uint16_t message_size = sizeof(struct gb_sdio_command_response) +
@@ -630,7 +630,7 @@ static ssize_t sdio_command_rsp(struct op_msg *op_rsp, uint16_t hd_cport_id,
 	for (i = 0; i < 4; i++)
 		op_rsp->sdio_cmd_rsp.resp[i] = htole32(sd->rsp[i]);
 
-	return send_response(hd_cport_id, op_rsp, message_size,
+	return send_response(cport_id, op_rsp, message_size,
 				oph->operation_id, oph->type,
 				PROTOCOL_STATUS_SUCCESS);
 }
@@ -644,7 +644,6 @@ int sdio_handler(struct gbsim_connection *connection, void *rbuf,
 	size_t payload_size = 0;
 	uint16_t message_size;
 	uint16_t cport_id = connection->cport_id;
-	uint16_t hd_cport_id = connection->hd_cport_id;
 	uint16_t data_blocks;
 	uint16_t data_blksz;
 	uint8_t *data;
@@ -686,7 +685,7 @@ int sdio_handler(struct gbsim_connection *connection, void *rbuf,
 			       op_req->sdio_cmd_req.cmd_type,
 			       le32toh(op_req->sdio_cmd_req.cmd_arg));
 
-		sdio_command_rsp(op_rsp, hd_cport_id, oph);
+		sdio_command_rsp(op_rsp, cport_id, oph);
 		return 0;
 	case GB_SDIO_TYPE_TRANSFER:
 		data_blocks = le16toh(op_req->sdio_xfer_req.data_blocks);
@@ -697,7 +696,7 @@ int sdio_handler(struct gbsim_connection *connection, void *rbuf,
 		else
 			sd_transfer_write(data_blocks, data_blksz);
 
-		sdio_transfer_rsp(op_rsp, hd_cport_id, oph, data_blocks,
+		sdio_transfer_rsp(op_rsp, cport_id, oph, data_blocks,
 				  data_blksz, data);
 		return 0;
 	default:
@@ -707,12 +706,12 @@ int sdio_handler(struct gbsim_connection *connection, void *rbuf,
 	}
 
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	send_response(hd_cport_id, op_rsp, message_size,
+	send_response(cport_id, op_rsp, message_size,
 				oph->operation_id, oph->type, result);
 
 	/* Simulate a card insert after sending capabilities */
 	if (oph->type == GB_SDIO_TYPE_GET_CAPABILITIES)
-		sdio_send_card_event(op_req, hd_cport_id,
+		sdio_send_card_event(op_req, cport_id,
 				     GB_SDIO_CARD_INSERTED);
 	return 0;
 }

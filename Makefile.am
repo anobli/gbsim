@@ -12,11 +12,9 @@ gbsim_SOURCES = \
 	config.h \
 	connection.c \
 	bootrom.c \
-	functionfs.c \
 	gbsim.h \
 	gpio.c \
 	control.c \
-	svc.c \
 	i2c.c \
 	inotify.c \
 	loopback.c \

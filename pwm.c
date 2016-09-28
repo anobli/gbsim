@@ -33,7 +33,7 @@ int pwm_handler(struct gbsim_connection *connection, void *rbuf,
 	__u32 period;
 	size_t payload_size;
 	uint16_t message_size;
-	uint16_t hd_cport_id = connection->hd_cport_id;
+	uint16_t cport_id = connection->cport_id;
 	uint8_t result = PROTOCOL_STATUS_SUCCESS;
 
 	op_rsp = (struct op_msg *)tbuf;
@@ -104,7 +104,7 @@ int pwm_handler(struct gbsim_connection *connection, void *rbuf,
 	}
 
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	return send_response(hd_cport_id, op_rsp, message_size,
+	return send_response(cport_id, op_rsp, message_size,
 				oph->operation_id, oph->type, result);
 }
 

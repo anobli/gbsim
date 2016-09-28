@@ -206,7 +206,7 @@ int power_supply_handler(struct gbsim_connection *connection, void *rbuf,
 	struct psy_property *psy_prop;
 	size_t payload_size = 0;
 	uint16_t message_size;
-	uint16_t hd_cport_id = connection->hd_cport_id;
+	uint16_t cport_id = connection->cport_id;
 	uint8_t id;
 	uint8_t prop;
 	uint16_t prop_val;
@@ -279,7 +279,7 @@ int power_supply_handler(struct gbsim_connection *connection, void *rbuf,
 
 	/* send response */
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	ret = send_response(hd_cport_id, op_rsp, message_size,
+	ret = send_response(cport_id, op_rsp, message_size,
 			    oph->operation_id, oph->type,
 			    PROTOCOL_STATUS_SUCCESS);
 

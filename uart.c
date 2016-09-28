@@ -55,7 +55,6 @@
  */
 struct gb_uart_port {
 	uint16_t	cport_id;
-	uint16_t	hd_cport_id;
 	int		fd;
 	uint8_t		id;
 	bool		init;
@@ -108,7 +107,7 @@ static int gb_uart_send(int i, void *tbuf, size_t tsize, __u8 type, __u8 flags)
 
 	/* Operation id is 0 (unidirectional operation) */
 
-	return send_request(up[i].hd_cport_id, msg, message_size, 0, type);
+	return send_request(up[i].cport_id, msg, message_size, 0, type);
 }
 
 static int tty_find_port(uint8_t module_id, uint16_t cport_id)
@@ -498,7 +497,7 @@ err:
 }
 
 static int uart_init_port(uint8_t module_id, uint16_t cport_id,
-			  uint16_t hd_cport_id, uint8_t id)
+			  uint8_t id)
 {
 	int i;
 
@@ -513,11 +512,10 @@ static int uart_init_port(uint8_t module_id, uint16_t cport_id,
 	}
 	up[port_count].module_id = module_id;
 	up[port_count].cport_id = cport_id;
-	up[port_count].hd_cport_id = hd_cport_id;
 	up[port_count].id = id;
 	up[port_count].init = true;
-	gbsim_info("UART Module %hu Cport %hhu HDCport %hhu port-index %d\n",
-		   module_id, cport_id, hd_cport_id, port_count);
+	gbsim_info("UART Module %hu Cport %hhu port-index %d\n",
+		   module_id, cport_id, port_count);
 	i = port_count;
 	port_count++;
 	return i;
@@ -532,7 +530,6 @@ int uart_handler(struct gbsim_connection *connection, void *rbuf,
 	size_t payload_size = 0;
 	uint16_t message_size;
 	uint16_t cport_id = connection->cport_id;
-	uint16_t hd_cport_id = connection->hd_cport_id;
 	uint8_t module_id;
 	uint8_t result = PROTOCOL_STATUS_SUCCESS;
 	struct gb_uart_set_break_request *set_break;
@@ -548,7 +545,7 @@ int uart_handler(struct gbsim_connection *connection, void *rbuf,
 	oph = (struct gb_operation_msg_hdr *)&op_req->header;
 
 	/* Associate the module_id and cport_id with the device fd */
-	i = uart_init_port(module_id, cport_id, hd_cport_id, oph->operation_id);
+	i = uart_init_port(module_id, cport_id, oph->operation_id);
 	if (i < 0)
 		return i;
 
@@ -592,7 +589,7 @@ int uart_handler(struct gbsim_connection *connection, void *rbuf,
 	}
 
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	return send_response(hd_cport_id, op_rsp, message_size,
+	return send_response(cport_id, op_rsp, message_size,
 			oph->operation_id, oph->type, result);
 }
 

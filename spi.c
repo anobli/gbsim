@@ -301,7 +301,7 @@ int spi_handler(struct gbsim_connection *connection, void *rbuf,
 	struct op_msg *op_rsp;
 	size_t payload_size = 0;
 	uint16_t message_size;
-	uint16_t hd_cport_id = connection->hd_cport_id;
+	uint16_t cport_id = connection->cport_id;
 	struct gb_spi_transfer *xfer;
 	struct gb_spi_dev *spi_dev;
 	struct gb_spi_dev_config *conf;
@@ -372,7 +372,7 @@ int spi_handler(struct gbsim_connection *connection, void *rbuf,
 	}
 
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	ret = send_response(hd_cport_id, op_rsp, message_size,
+	ret = send_response(cport_id, op_rsp, message_size,
 			    oph->operation_id, oph->type,
 			    PROTOCOL_STATUS_SUCCESS);
 	return ret;

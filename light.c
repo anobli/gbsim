@@ -250,7 +250,7 @@ static struct gb_light *light_init(uint8_t id)
 	return light;
 }
 
-static ssize_t lights_send_event(struct op_msg *op_req, uint16_t hd_cport_id,
+static ssize_t lights_send_event(struct op_msg *op_req, uint16_t cport_id,
 				 uint8_t light_id, uint8_t event)
 {
 	size_t payload_size = sizeof(struct gb_lights_event_request);
@@ -263,7 +263,7 @@ static ssize_t lights_send_event(struct op_msg *op_req, uint16_t hd_cport_id,
 		    light_id);
 
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	return send_request(hd_cport_id, op_req, message_size, 0,
+	return send_request(cport_id, op_req, message_size, 0,
 			    GB_LIGHTS_TYPE_EVENT);
 }
 
@@ -278,7 +278,7 @@ int lights_handler(struct gbsim_connection *connection, void *rbuf,
 	struct gb_channel *channel = NULL;
 	size_t payload_size = 0;
 	uint16_t message_size;
-	uint16_t hd_cport_id = connection->hd_cport_id;
+	uint16_t cport_id = connection->cport_id;
 	uint8_t light_id = 0;
 	int i;
 
@@ -381,14 +381,14 @@ int lights_handler(struct gbsim_connection *connection, void *rbuf,
 
 	/* send response */
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	ret = send_response(hd_cport_id, op_rsp, message_size,
+	ret = send_response(cport_id, op_rsp, message_size,
 				oph->operation_id, oph->type,
 				PROTOCOL_STATUS_SUCCESS);
 
 	/* Test hack: send release event if brightness is set to 254 */
 	if (oph->type == GB_LIGHTS_TYPE_SET_BRIGHTNESS &&
 	    channel && channel->brightness == 254) {
-		return lights_send_event(op_req, hd_cport_id, light_id,
+		return lights_send_event(op_req, cport_id, light_id,
 					 GB_LIGHTS_LIGHT_CONFIG);
 	}
 

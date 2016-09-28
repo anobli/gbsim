@@ -46,14 +46,13 @@ extern char *hotplug_basedir;
 #define ENDO_ID 0x4755
 #define AP_INTF_ID 0x5
 
+#define GB_PORT	8880
+
 extern int control;
-extern int to_ap;
-extern int from_ap;
 
 struct gbsim_connection {
 	TAILQ_ENTRY(gbsim_connection) cnode;
 	uint16_t cport_id;
-	uint16_t hd_cport_id;
 	int protocol;
 };
 
@@ -211,7 +210,7 @@ static inline uint8_t cport_to_module_id(uint16_t cport_id)
 
 struct gbsim_connection *connection_find(uint16_t cport_id);
 void allocate_connection(uint16_t cport_id, uint16_t hd_cport_id, int protocol_id);
-uint16_t find_hd_cport_for_protocol(int protocol_id);
+uint16_t find_cport_for_protocol(int protocol_id);
 void free_connection(struct gbsim_connection *connections);
 void free_connections(void);
 

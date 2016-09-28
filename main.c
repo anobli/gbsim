@@ -121,14 +121,13 @@ int main(int argc, char *argv[])
 	socket_init();
 
 	/* Protocol handlers */
-	svc_init();
 	gpio_init();
 	i2c_init();
 	uart_init();
 	sdio_init();
 	loopback_init();
 
-	svc_request_send(GB_REQUEST_TYPE_PROTOCOL_VERSION, AP_INTF_ID);
+	inotify_start(hotplug_basedir);
 
 	socket_loop();
 

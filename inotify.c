@@ -127,16 +127,7 @@ static void *inotify_thread(void *param)
 					interface.manifest = mh;
 					interface.manifest_size = le16toh(mh->size);
 					manifest_parse(mh, le16toh(mh->size));
-
-					gbsim_info("%s Interface inserted\n", event->name);
-					/* Fix Interface ID to 1 */
-					svc_request_send(GB_SVC_TYPE_INTF_HOTPLUG, 1);
-				} else
-					gbsim_error("missing manifest blob, no hotplug event sent\n");
-			} else if (event->mask & IN_DELETE) {
-				/* Fix Interface ID to 1 */
-				svc_request_send(GB_SVC_TYPE_INTF_HOT_UNPLUG, 1);
-				gbsim_info("%s interface removed\n", event->name);
+				}
 			}
 		}
 	} while (length >= 0);

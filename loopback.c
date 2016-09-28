@@ -38,7 +38,6 @@ enum {
 
 struct gb_loopback {
 	uint16_t	cport_id;
-	uint16_t	hd_cport_id;
 	uint8_t		id;
 	bool		init;
 	pthread_mutex_t	loopback_data;
@@ -108,16 +107,14 @@ static void *loopback_thread(void *param)
 	return NULL;
 }
 
-static void loopback_init_port(uint8_t module_id, uint16_t cport_id,
-			  uint16_t hd_cport_id, uint8_t id)
+static void loopback_init_port(uint8_t module_id, uint16_t cport_id, uint8_t id)
 {
 	gblb.module_id = module_id;
 	gblb.cport_id = cport_id;
-	gblb.hd_cport_id = hd_cport_id;
 	gblb.id = id;
 	gblb.init = true;
-	gbsim_debug("Loopback Module %hu Cport %hhu HDCport %hhu index %d\n",
-		    module_id, cport_id, hd_cport_id, port_count);
+	gbsim_debug("Loopback Module %hu Cport %hhu index %d\n",
+		    module_id, cport_id, port_count);
 }
 
 
@@ -132,7 +129,6 @@ int loopback_handler(struct gbsim_connection *connection, void *rbuf,
 	__le32 len;
 	uint16_t message_size;
 	uint16_t cport_id = connection->cport_id;
-	uint16_t hd_cport_id = connection->hd_cport_id;
 	uint8_t module_id;
 	uint8_t result = PROTOCOL_STATUS_SUCCESS;
 	struct gb_loopback_transfer_request *request;
@@ -143,7 +139,7 @@ int loopback_handler(struct gbsim_connection *connection, void *rbuf,
 	oph = (struct gb_operation_msg_hdr *)&op_req->header;
 
 	/* Associate the module_id and cport_id with the device fd */
-	loopback_init_port(module_id, cport_id, hd_cport_id, oph->operation_id);
+	loopback_init_port(module_id, cport_id, oph->operation_id);
 
 	switch (oph->type) {
 	case GB_REQUEST_TYPE_PROTOCOL_VERSION:
@@ -178,7 +174,7 @@ int loopback_handler(struct gbsim_connection *connection, void *rbuf,
 	}
 
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	return send_response(hd_cport_id, op_rsp, message_size,
+	return send_response(connection->cport_id, op_rsp, message_size,
 				oph->operation_id, oph->type, result);
 }
 

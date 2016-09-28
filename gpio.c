@@ -81,7 +81,7 @@ int gpio_handler(struct gbsim_connection *connection, void *rbuf,
 	size_t payload_size;
 	ssize_t nbytes;
 	uint16_t message_size;
-	uint16_t hd_cport_id = connection->hd_cport_id;
+	uint16_t cport_id = connection->cport_id;
 	uint8_t which = 0;
 	int send_event = 0;
 
@@ -185,7 +185,7 @@ int gpio_handler(struct gbsim_connection *connection, void *rbuf,
 	}
 
 	message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-	nbytes = send_response(hd_cport_id, op_rsp, message_size,
+	nbytes = send_response(cport_id, op_rsp, message_size,
 				oph->operation_id, oph->type,
 				PROTOCOL_STATUS_SUCCESS);
 	if (nbytes)
@@ -204,7 +204,7 @@ int gpio_handler(struct gbsim_connection *connection, void *rbuf,
 		/* mask the irq to mimic fw action on event send */
 		gb_gpios[which - 1].irq_unmasked = 0;
 		message_size = sizeof(struct gb_operation_msg_hdr) + payload_size;
-		return send_request(hd_cport_id, op_req, message_size, 0,
+		return send_request(cport_id, op_req, message_size, 0,
 				    GB_GPIO_TYPE_IRQ_EVENT);
 	}
 #endif

@@ -34,7 +34,7 @@ int control_handler(struct gbsim_connection *connection, void *rbuf,
 	struct gb_operation_msg_hdr *oph = &op_req->header;
 	size_t payload_size;
 	uint16_t message_size = sizeof(*oph);
-	uint16_t hd_cport_id = connection->hd_cport_id;
+	uint16_t cport_id = connection->cport_id;
 
 	switch (oph->type) {
 	case GB_REQUEST_TYPE_PROTOCOL_VERSION:
@@ -64,7 +64,7 @@ int control_handler(struct gbsim_connection *connection, void *rbuf,
 	}
 
 	message_size += payload_size;
-	return send_response(hd_cport_id, op_rsp, message_size,
+	return send_response(cport_id, op_rsp, message_size,
 				oph->operation_id, oph->type,
 				PROTOCOL_STATUS_SUCCESS);
 }
