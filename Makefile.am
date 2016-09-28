@@ -13,7 +13,6 @@ gbsim_SOURCES = \
 	connection.c \
 	bootrom.c \
 	functionfs.c \
-	gadget.c \
 	gbsim.h \
 	gpio.c \
 	control.c \
@@ -28,7 +27,8 @@ gbsim_SOURCES = \
 	spi.c \
 	power_supply.c \
 	light.c \
-	uart.c
+	uart.c \
+	socket.c
 
 gbsim_CPPFLAGS = \
 	-Wall \

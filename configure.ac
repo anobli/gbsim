@@ -18,7 +18,6 @@ AC_PROG_INSTALL
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [main])
 PKG_CHECK_MODULES(SOC, libsoc)
-PKG_CHECK_MODULES(USBG, libusbg)
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h stdlib.h string.h sys/ioctl.h sys/mount.h unistd.h])
@@ -31,14 +30,6 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
 	Makefile
 ])
-
-AC_ARG_ENABLE(legacy-descriptors,
-[AS_HELP_STRING([--enable-legacy-descriptors],
-		[Use the legacy (pre-V2) USB descriptor format])],
-[if test x$enableval = xyes; then
-  AC_DEFINE(GBSIM_LEGACY_DESCRIPTORS, [],
-	  [Use deprecated functionfs descriptors])
-fi])
 
 AC_OUTPUT
 

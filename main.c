@@ -14,9 +14,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <usbg/usbg.h>
-
 #include "gbsim.h"
+#include "socket.h"
 
 int bbb_backend = 0;
 int i2c_adapter = 0;
@@ -24,9 +23,6 @@ int uart_portno = 0;
 int uart_count = 0;
 char *hotplug_basedir;
 int verbose = 0;
-
-static usbg_state *s;
-static usbg_gadget *g;
 
 static struct sigaction sigact;
 
@@ -38,8 +34,7 @@ static void cleanup(void)
 	sigemptyset(&sigact.sa_mask);
 
 	uart_cleanup();
-	gadget_cleanup(s, g);
-	functionfs_cleanup();
+	sockets_close();
 	svc_exit();
 }
 
@@ -61,7 +56,6 @@ static void signals_init(void)
 
 int main(int argc, char *argv[])
 {
-	int ret = -EINVAL;
 	int o;
 
 	while ((o = getopt(argc, argv, ":bh:i:u:U:v")) != -1) {
@@ -124,17 +118,7 @@ int main(int argc, char *argv[])
 
 	TAILQ_INIT(&interface.connections);
 
-	ret = gadget_create(&s, &g);
-	if (ret < 0)
-		goto out;
-
-	ret = functionfs_init();
-	if (ret < 0)
-		goto out;
-
-	ret = gadget_enable(g);
-	if (ret < 0)
-		goto out;
+	socket_init();
 
 	/* Protocol handlers */
 	svc_init();
@@ -144,9 +128,10 @@ int main(int argc, char *argv[])
 	sdio_init();
 	loopback_init();
 
-	ret = functionfs_loop();
+	svc_request_send(GB_REQUEST_TYPE_PROTOCOL_VERSION, AP_INTF_ID);
 
-out:
-	return ret;
+	socket_loop();
+
+	return 0;
 }
 

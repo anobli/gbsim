@@ -3,6 +3,7 @@
  *
  * Copyright 2014 Google Inc.
  * Copyright 2014 Linaro Ltd.
+ * Copyright 2016 BayLibre.
  *
  * Provided under the three clause BSD license found in the LICENSE file.
  */
@@ -15,6 +16,7 @@
 #include <errno.h>
 
 #include "gbsim.h"
+#include "socket.h"
 
 #define ES1_MSG_SIZE	(2 * 1024)
 
@@ -36,12 +38,6 @@ gbsim_message_cport_pack(struct gb_operation_msg_hdr *header, uint16_t cport_id)
 static void gbsim_message_cport_clear(struct gb_operation_msg_hdr *header)
 {
 	header->pad[0] = 0;
-}
-
-/* Extract the CPort id packed into the header, and clear it */
-static uint16_t gbsim_message_cport_unpack(struct gb_operation_msg_hdr *header)
-{
-	return (uint16_t)header->pad[0];
 }
 
 struct gbsim_connection *connection_find(uint16_t cport_id)
@@ -76,6 +72,7 @@ void allocate_connection(uint16_t cport_id, uint16_t hd_cport_id, int protocol_i
 	connection->hd_cport_id = hd_cport_id;
 	connection->protocol = protocol_id;
 	TAILQ_INSERT_TAIL(&interface.connections, connection, cnode);
+	socket_create(cport_id);
 }
 
 void free_connection(struct gbsim_connection *connection)
@@ -262,10 +259,9 @@ static int connection_recv_handler(struct gbsim_connection *connection,
 	}
 }
 
-static void recv_handler(void *rbuf, size_t rsize)
+static void recv_handler(uint16_t cport_id, void *rbuf, size_t rsize)
 {
 	struct gb_operation_msg_hdr *hdr = rbuf;
-	uint16_t hd_cport_id;
 	struct gbsim_connection *connection;
 	char *protocol, *operation, *type;
 	int ret;
@@ -275,23 +271,20 @@ static void recv_handler(void *rbuf, size_t rsize)
 		return;
 	}
 
-	/* Retreive the cport id stored in the header pad bytes */
-	hd_cport_id = gbsim_message_cport_unpack(hdr);
-
-	connection = connection_find(hd_cport_id);
+	connection = connection_find(cport_id);
 	if (!connection) {
 		gbsim_error("message received for unknown cport id %u\n",
-			hd_cport_id);
+			cport_id);
 		return;
 	}
 
 	type = hdr->type & OP_RESPONSE ? "response" : "request";
-	get_protocol_operation(hd_cport_id, &protocol, &operation,
+	get_protocol_operation(cport_id, &protocol, &operation,
 			       hdr->type & ~OP_RESPONSE);
 
 	/* FIXME: can identify module from our cport connection */
 	gbsim_debug("AP -> Module %hhu CPort %hu %s %s %s\n",
-		    cport_to_module_id(hd_cport_id), connection->cport_id,
+		    cport_to_module_id(cport_id), connection->cport_id,
 		    protocol, operation, type);
 
 	if (verbose)
@@ -302,12 +295,12 @@ static void recv_handler(void *rbuf, size_t rsize)
 	ret = connection_recv_handler(connection, rbuf, rsize);
 	if (ret)
 		gbsim_debug("connection_recv_handler() returned %d\n", ret);
+
 }
 
 void recv_thread_cleanup(void *arg)
 {
-	cleanup_endpoint(to_ap, "to_ap");
-	cleanup_endpoint(from_ap, "from_ap");
+	/* TODO Close sockets */
 }
 
 /*
@@ -316,20 +309,49 @@ void recv_thread_cleanup(void *arg)
  */
 void *recv_thread(void *param)
 {
-	void *rbuf = &cport_rbuf[0];
-	size_t rbuf_size = sizeof(cport_rbuf);
+	struct gb_operation_msg_hdr *hdr;
+	int socket;
+
+	hdr = (struct gb_operation_msg_hdr *)cport_rbuf;
+	socket = (int) param;
 
 	while (1) {
+		uint16_t size;
 		ssize_t rsize;
 
-		memset(rbuf, 0, rbuf_size);	/* Zero buffer before use */
+		/* Zero buffer before use */
+		memset(hdr, 0, sizeof(cport_rbuf));
 
-		rsize = read(from_ap, rbuf, rbuf_size);
+		rsize = read(socket, hdr, sizeof(*hdr));
 		if (rsize < 0) {
-			gbsim_error("error %zd receiving from AP\n", rsize);
+			gbsim_error("error %zd receiving from Cport %d\n",
+				    rsize, socket_to_cport(socket));
+			return NULL;
+		} else if (rsize < sizeof(*hdr)) {
+			gbsim_error("Failed to get the header from Cport %d\n",
+				    socket_to_cport(socket));
 			return NULL;
 		}
 
-		recv_handler(rbuf, rsize);
+		size = le16toh(hdr->size);
+		if (size > sizeof(cport_rbuf)) {
+			gbsim_error("receiving to munch data from Cport %d\n",
+				    socket_to_cport(socket));
+			return NULL;
+		}
+
+		size -= sizeof(*hdr);
+		rsize = read(socket, hdr + 1, size);
+		if (rsize < 0) {
+			gbsim_error("error %zd receiving from Cport %d\n",
+				    rsize, socket_to_cport(socket));
+			return NULL;
+		} else if (rsize != size) {
+			gbsim_error("received an incomplete packet from Cport"
+				    " %d\n", socket_to_cport(socket));
+			return NULL;
+		}
+
+		recv_handler(socket_to_cport(socket), hdr, le16toh(hdr->size));
 	}
 }

@@ -16,7 +16,9 @@
 #include <endian.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <usbg/usbg.h>
+#include <stdint.h>
+#include <sys/queue.h>
+#include <linux/types.h>
 
 #include <greybus_manifest.h>
 #include <greybus_protocols.h>
@@ -213,16 +215,11 @@ uint16_t find_hd_cport_for_protocol(int protocol_id);
 void free_connection(struct gbsim_connection *connections);
 void free_connections(void);
 
-int gadget_create(usbg_state **, usbg_gadget **);
-int gadget_enable(usbg_gadget *);
-int gadget_cleanup(usbg_state *, usbg_gadget *);
-
-int functionfs_init(void);
-int functionfs_loop(void);
-int functionfs_cleanup(void);
-void cleanup_endpoint(int, char *);
-
 int inotify_start(char *);
+
+int socket_create(unsigned int cport_id);
+void socket_close(int sockfd);
+void socket_loop(void);
 
 void *recv_thread(void *);
 void recv_thread_cleanup(void *);
