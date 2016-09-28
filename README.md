@@ -57,28 +57,22 @@ For example:
 Now start the simulator:
 
 ```
-gbsim -h /path/to -v
+gbsim -m module.mnfb
 ```
 
-Where */path/to* is the base directory containing the
-directory *hotplug-modules*
+Where *module.mnfb is the manifest blob to use to
+enumerate the module.
+Manifest blob files can be created using the Manifesto tool
+found at https://github.com/projectara/manifesto.
 
 gbsim supports the following option flags:
 
 * -b: enable the BeagleBone Black hardware backend
-* -h: hotplug base directory
+* -m: manifest to load
 * -i: i2c adapter (if BBB hardware backend is enabled)
 * -v: enable verbose output
 
 ### Using the simulator
-
-At this point, it's possible to hot plug/unplug modules by simply copying or
-removing a conformant manifest blob file in the /path/to/hotplug-module
-directory. Manifest blob files can be created using the Manifesto tool
-found at https://github.com/projectara/manifesto. Using the Simple I2C Module as
-an example, a module can be inserted as follows:
-
-`cp /foo/bar/simple-i2c-module.mnfb /path/to/hotplug-module/simple-i2c-module.mnfb`
 
 To work, you will need to run on another computer gbridge application.
 Form here, gbridge will detect gbsim as a Greybus module and hotplug it.

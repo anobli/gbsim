@@ -16,7 +16,6 @@ gbsim_SOURCES = \
 	gpio.c \
 	control.c \
 	i2c.c \
-	inotify.c \
 	loopback.c \
 	main.c \
 	manifest.c \

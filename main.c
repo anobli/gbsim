@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <avahi-client/client.h>
 #include <avahi-client/publish.h>
@@ -30,7 +32,7 @@ int bbb_backend = 0;
 int i2c_adapter = 0;
 int uart_portno = 0;
 int uart_count = 0;
-char *hotplug_basedir;
+char *mnfb = NULL;
 int verbose = 1;
 
 static struct sigaction sigact;
@@ -64,19 +66,72 @@ static void signals_init(void)
 	sigaction(SIGTERM, &sigact, (struct sigaction *)NULL);
 }
 
+static struct greybus_manifest_header *get_manifest_blob(char *mnfs)
+{
+	struct greybus_manifest_header *mh;
+	int mnf_fd;
+	ssize_t n;
+	__le16 file_size;
+	uint16_t size;
+
+	if ((mnf_fd = open(mnfs, O_RDONLY)) < 0) {
+		gbsim_error("failed to open manifest blob %s\n", mnfs);
+		return NULL;
+	}
+
+	/* First just get the size */
+	if ((n = read(mnf_fd, &file_size, 2)) != 2) {
+		gbsim_error("failed to read manifest size, read %zd\n", n);
+		goto out;
+	}
+	size = le16toh(file_size);
+
+	/* Size has to cover at least itself */
+	if (size < 2) {
+		gbsim_error("bad manifest size %hu\n", size);
+		goto out;
+	}
+
+	/* Allocate a big enough buffer */
+	if (!(mh = malloc(size))) {
+		gbsim_error("failed to allocate manifest buffer\n");
+		goto out;
+	}
+
+	/* Now go back and read the whole thing */
+	if (lseek(mnf_fd, 0, SEEK_SET)) {
+		gbsim_error("failed to seek to front of manifest\n");
+		goto out_free;
+	}
+	if (read(mnf_fd, mh, size) != size) {
+		gbsim_error("failed to read manifest\n");
+		goto out_free;
+	}
+	close(mnf_fd);
+
+	return mh;
+out_free:
+	free(mh);
+out:
+	close(mnf_fd);
+
+	return NULL;
+}
+
 int main(int argc, char *argv[])
 {
 	int o;
+	struct greybus_manifest_header *mh;
 
-	while ((o = getopt(argc, argv, ":bh:i:u:U:v")) != -1) {
+	while ((o = getopt(argc, argv, ":bm:i:u:U:v")) != -1) {
 		switch (o) {
 		case 'b':
 			bbb_backend = 1;
 			printf("bbb_backend %d\n", bbb_backend);
 			break;
-		case 'h':
-			hotplug_basedir = optarg;
-			printf("hotplug_basedir %s\n", hotplug_basedir);
+		case 'm':
+			mnfb = optarg;
+			printf("manifest %s\n", mnfb);
 			break;
 		case 'i':
 			i2c_adapter = atoi(optarg);
@@ -119,8 +174,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (!hotplug_basedir) {
-		gbsim_error("hotplug directory not specified, aborting\n");
+	if (!mnfb) {
+		gbsim_error("manifest not specified, aborting\n");
 		return 1;
 	}
 
@@ -137,7 +192,12 @@ int main(int argc, char *argv[])
 	sdio_init();
 	loopback_init();
 
-	inotify_start(hotplug_basedir);
+	mh = get_manifest_blob(mnfb);
+	if (!mh) {
+		gbsim_error("Failed to load manifest, aborting\n");
+		return 1;
+	}
+	manifest_parse(mh, le16toh(mh->size));
 
 	socket_loop();
 

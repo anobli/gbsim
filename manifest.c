@@ -177,6 +177,9 @@ bool manifest_parse(void *data, size_t size)
 		return false;
 	}
 
+	interface.manifest_size = manifest_size;
+	interface.manifest = data;
+
 	/* OK, find all the descriptors */
 	desc = (struct greybus_descriptor *)(header + 1);
 	size -= sizeof(*header);
