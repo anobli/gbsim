@@ -220,6 +220,8 @@ int socket_create(unsigned int cport_id);
 void socket_close(int sockfd);
 void socket_loop(void);
 
+int avahi_main(void);
+
 void *recv_thread(void *);
 void recv_thread_cleanup(void *);
 

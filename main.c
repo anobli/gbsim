@@ -14,6 +14,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <avahi-client/client.h>
+#include <avahi-client/publish.h>
+
+#include <avahi-common/alternative.h>
+#include <avahi-common/simple-watch.h>
+#include <avahi-common/malloc.h>
+#include <avahi-common/error.h>
+#include <avahi-common/timeval.h>
+
 #include "gbsim.h"
 #include "socket.h"
 
@@ -22,17 +31,18 @@ int i2c_adapter = 0;
 int uart_portno = 0;
 int uart_count = 0;
 char *hotplug_basedir;
-int verbose = 0;
+int verbose = 1;
 
 static struct sigaction sigact;
 
 struct gbsim_interface interface;
-
+extern AvahiSimplePoll *simple_poll;
 static void cleanup(void)
 {
 	printf("cleaning up\n");
 	sigemptyset(&sigact.sa_mask);
 
+	avahi_simple_poll_quit(simple_poll);
 	uart_cleanup();
 	sockets_close();
 	svc_exit();
@@ -130,6 +140,8 @@ int main(int argc, char *argv[])
 	inotify_start(hotplug_basedir);
 
 	socket_loop();
+
+	avahi_main();
 
 	return 0;
 }

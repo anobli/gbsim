@@ -26,7 +26,8 @@ gbsim_SOURCES = \
 	power_supply.c \
 	light.c \
 	uart.c \
-	socket.c
+	socket.c \
+	avahi-publish.c
 
 gbsim_CPPFLAGS = \
 	-Wall \

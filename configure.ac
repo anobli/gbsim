@@ -17,6 +17,8 @@ AC_PROG_INSTALL
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [main])
+AC_CHECK_LIB([avahi-common], [main])
+AC_CHECK_LIB([avahi-client], [main])
 PKG_CHECK_MODULES(SOC, libsoc)
 
 # Checks for header files.
